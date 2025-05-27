@@ -2,8 +2,13 @@ import { FastifyPluginAsyncTypebox } from '@fastify/type-provider-typebox';
 import { createGqlResponseSchema, gqlResponseSchema } from './schemas.js';
 import { GraphQLSchema, graphql, parse, validate, DocumentNode, GraphQLError } from 'graphql';
 import { schema } from './schema.js';
-import { GraphQLContext } from './common/GraphQLContext.js';
+import { GraphQLContext, BasicLoaders } from './common/GraphQLContext.js';
 import depthLimit from 'graphql-depth-limit';
+
+import { createUserLoaders } from './loaders/UserLoaders.js';
+import { createPostLoaders } from './loaders/PostLoaders.js';
+import { createProfileLoaders } from './loaders/ProfileLoaders.js';
+import { createMemberTypeLoaders } from './loaders/MemberTypeLoaders.js';
 
 const MAX_DEPTH = 5;
 
@@ -25,9 +30,18 @@ const plugin: FastifyPluginAsyncTypebox = async (fastify) => {
     },
     async handler(req) {
       const { query, variables, operationName } = req.body as GraphQLRequestBody;
+
+      const loaders: BasicLoaders = {
+        userLoader: createUserLoaders(fastify.prisma).userLoader,
+        postsByAuthorIdLoader: createPostLoaders(fastify.prisma).postsByAuthorIdLoader,
+        profileByUserIdLoader: createProfileLoaders(fastify.prisma).profileByUserIdLoader,
+        memberTypeLoader: createMemberTypeLoaders(fastify.prisma).memberTypeLoader,
+      };
+
       const contextValue: GraphQLContext = {
         prisma: fastify.prisma,
         fastify: fastify,
+        loaders,
       };
 
       let documentAst: DocumentNode;
@@ -51,7 +65,7 @@ const plugin: FastifyPluginAsyncTypebox = async (fastify) => {
       }
 
       const result = await graphql({
-        schema: schema,
+        schema,
         source: query,
         variableValues: variables,
         contextValue,
