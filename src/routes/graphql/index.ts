@@ -2,7 +2,7 @@ import { FastifyPluginAsyncTypebox } from '@fastify/type-provider-typebox';
 import { createGqlResponseSchema, gqlResponseSchema } from './schemas.js';
 import { GraphQLSchema, graphql, parse, validate, DocumentNode, GraphQLError } from 'graphql';
 import { schema } from './schema.js';
-import { GraphQLContext, BasicLoaders } from './common/GraphQLContext.js';
+import { GraphQLContext, Loaders } from './common/GraphQLContext.js';
 import depthLimit from 'graphql-depth-limit';
 
 import { createUserLoaders } from './loaders/UserLoaders.js';
@@ -31,11 +31,15 @@ const plugin: FastifyPluginAsyncTypebox = async (fastify) => {
     async handler(req) {
       const { query, variables, operationName } = req.body as GraphQLRequestBody;
 
-      const loaders: BasicLoaders = {
-        userLoader: createUserLoaders(fastify.prisma).userLoader,
+      const userLoaders = createUserLoaders(fastify.prisma);
+
+      const loaders: Loaders = {
+        userLoader: userLoaders.userLoader,
         postsByAuthorIdLoader: createPostLoaders(fastify.prisma).postsByAuthorIdLoader,
         profileByUserIdLoader: createProfileLoaders(fastify.prisma).profileByUserIdLoader,
         memberTypeLoader: createMemberTypeLoaders(fastify.prisma).memberTypeLoader,
+        authorsUserSubscribedToLoader: userLoaders.authorsUserSubscribedToLoader,
+        subscribersToUserLoader: userLoaders.subscribersToUserLoader,
       };
 
       const contextValue: GraphQLContext = {
@@ -47,11 +51,11 @@ const plugin: FastifyPluginAsyncTypebox = async (fastify) => {
       let documentAst: DocumentNode;
       try {
         documentAst = parse(query);
-      } catch (syntaxError) {
-        const error = syntaxError instanceof GraphQLError
-          ? syntaxError
-          : new GraphQLError(String(syntaxError));
-        return { errors: [error] };
+      } catch (error) {
+        const graphqlError = error instanceof GraphQLError
+          ? error
+          : new GraphQLError(String(error));
+        return { errors: [graphqlError] };
       }
 
       const validationErrors = validate(
