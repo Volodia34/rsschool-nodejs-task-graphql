@@ -1,4 +1,4 @@
-import { GraphQLFieldConfigMap, GraphQLList, GraphQLNonNull, GraphQLObjectType } from 'graphql'; // Додаємо GraphQLObjectType
+import { GraphQLFieldConfigMap, GraphQLList, GraphQLNonNull, GraphQLObjectType } from 'graphql';
 import { MemberType, MemberTypeIdEnum } from '../types/MemberType.type.js';
 import { PostType } from '../types/Post.type.js';
 import { UserType } from '../types/User.type.js';
@@ -18,7 +18,10 @@ export const RootQueryResolvers: GraphQLFieldConfigMap<unknown, GraphQLContext> 
   },
   users: {
     type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(UserType))),
-    resolve: async (_, __, { prisma }) => prisma.user.findMany(),
+    resolve: async (_, __, { prisma, loaders }) => {
+      const users = await prisma.user.findMany();
+      return users;
+    }
   },
   profiles: {
     type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(ProfileType))),
@@ -27,8 +30,8 @@ export const RootQueryResolvers: GraphQLFieldConfigMap<unknown, GraphQLContext> 
   memberType: {
     type: MemberType,
     args: { id: { type: new GraphQLNonNull(MemberTypeIdEnum) } },
-    resolve: async (_, { id }: { id: PrismaMemberTypeId }, { prisma }) =>
-      prisma.memberType.findUnique({ where: { id } }),
+    resolve: (_, { id }: { id: PrismaMemberTypeId }, { loaders }) =>
+      loaders.memberTypeLoader.load(id),
   },
   post: {
     type: PostType,
@@ -39,8 +42,8 @@ export const RootQueryResolvers: GraphQLFieldConfigMap<unknown, GraphQLContext> 
   user: {
     type: UserType,
     args: { id: { type: new GraphQLNonNull(UUIDType) } },
-    resolve: async (_, { id }: { id: string }, { prisma }) =>
-      prisma.user.findUnique({ where: { id } }),
+    resolve: (_, { id }: { id: string }, { loaders }) =>
+      loaders.userLoader.load(id),
   },
   profile: {
     type: ProfileType,
