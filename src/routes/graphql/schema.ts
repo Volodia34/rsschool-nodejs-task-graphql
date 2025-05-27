@@ -1,5 +1,6 @@
 import { GraphQLSchema } from 'graphql';
 import { RootQueryType } from './resolvers/Query.resolvers.js';
+import { RootMutationType } from './resolvers/Mutation.resolvers.js';
 
 import { UserType } from './types/User.type.js';
 import { PostType } from './types/Post.type.js';
@@ -12,6 +13,7 @@ import { profileUserResolver, profileMemberTypeResolver } from './resolvers/Prof
 
 export const schema = new GraphQLSchema({
   query: RootQueryType,
+  mutation: RootMutationType,
 });
 
 const userFields = UserType.getFields();
