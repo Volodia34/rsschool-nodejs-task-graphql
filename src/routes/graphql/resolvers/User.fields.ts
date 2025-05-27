@@ -1,4 +1,4 @@
-import { GraphQLFieldResolver } from 'graphql';
+import { GraphQLFieldResolver } from 'graphql'; // GraphQLResolveInfo та parseResolveInfo поки не потрібні тут
 import { User, Post, Profile } from '@prisma/client';
 import { GraphQLContext } from '../common/GraphQLContext.js';
 
@@ -10,28 +10,10 @@ export const userProfileResolver: GraphQLFieldResolver<User, GraphQLContext, unk
   return loaders.profileByUserIdLoader.load(source.id);
 };
 
-export const userSubscribedToResolver: GraphQLFieldResolver<User, GraphQLContext, unknown, Promise<User[]>> = (source, _, { prisma }) => {
-  console.warn(`[User.fields] userSubscribedToResolver for ${source.id} using direct prisma call (TODO: DataLoader)`);
-  return prisma.user.findMany({
-    where: {
-      subscribedToUser: {
-        some: {
-          subscriberId: source.id,
-        },
-      },
-    },
-  });
+export const userSubscribedToResolver: GraphQLFieldResolver<User, GraphQLContext, unknown, Promise<User[]>> = (source, _, { loaders }) => {
+  return loaders.authorsUserSubscribedToLoader.load(source.id);
 };
 
-export const subscribedToUserResolver: GraphQLFieldResolver<User, GraphQLContext, unknown, Promise<User[]>> = (source, _, { prisma }) => {
-  console.warn(`[User.fields] subscribedToUserResolver for ${source.id} using direct prisma call (TODO: DataLoader)`);
-  return prisma.user.findMany({
-    where: {
-      userSubscribedTo: {
-        some: {
-          authorId: source.id,
-        },
-      },
-    },
-  });
+export const subscribedToUserResolver: GraphQLFieldResolver<User, GraphQLContext, unknown, Promise<User[]>> = (source, _, { loaders }) => {
+  return loaders.subscribersToUserLoader.load(source.id);
 };
